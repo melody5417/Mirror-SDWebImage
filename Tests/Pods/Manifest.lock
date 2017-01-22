@@ -1,0 +1,56 @@
+PODS:
+  - Expecta (1.0.5)
+  - FLAnimatedImage (1.0.12)
+  - libwebp (0.5.1):
+    - libwebp/core (= 0.5.1)
+    - libwebp/dec (= 0.5.1)
+    - libwebp/demux (= 0.5.1)
+    - libwebp/dsp (= 0.5.1)
+    - libwebp/enc (= 0.5.1)
+    - libwebp/mux (= 0.5.1)
+    - libwebp/utils (= 0.5.1)
+    - libwebp/webp (= 0.5.1)
+  - libwebp/core (0.5.1):
+    - libwebp/webp
+  - libwebp/dec (0.5.1):
+    - libwebp/core
+  - libwebp/demux (0.5.1):
+    - libwebp/core
+  - libwebp/dsp (0.5.1):
+    - libwebp/core
+  - libwebp/enc (0.5.1):
+    - libwebp/core
+  - libwebp/mux (0.5.1):
+    - libwebp/core
+  - libwebp/utils (0.5.1):
+    - libwebp/core
+  - libwebp/webp (0.5.1)
+  - SDWebImage/Core (4.0.0-beta2)
+  - SDWebImage/GIF (4.0.0-beta2):
+    - FLAnimatedImage (~> 1.0)
+    - SDWebImage/Core
+  - SDWebImage/MapKit (4.0.0-beta2):
+    - SDWebImage/Core
+  - SDWebImage/WebP (4.0.0-beta2):
+    - libwebp
+    - SDWebImage/Core
+
+DEPENDENCIES:
+  - Expecta
+  - SDWebImage/GIF (from `../`)
+  - SDWebImage/MapKit (from `../`)
+  - SDWebImage/WebP (from `../`)
+
+EXTERNAL SOURCES:
+  SDWebImage:
+    :path: ../
+
+SPEC CHECKSUMS:
+  Expecta: e1c022fcd33910b6be89c291d2775b3fe27a89fe
+  FLAnimatedImage: 4a0b56255d9b05f18b6dd7ee06871be5d3b89e31
+  libwebp: b9126f8982a95370cf4eaad9bb3fefd57f052c15
+  SDWebImage: e379f33106cf8d6766f970c0ef1c3fb609c94d78
+
+PODFILE CHECKSUM: 8abec08c38a829db35762ff6e6c41ea182dee396
+
+COCOAPODS: 1.0.1
