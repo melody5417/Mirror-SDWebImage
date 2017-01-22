@@ -14,6 +14,7 @@
 
 static char loadOperationKey;
 
+// 框架中所有的操作都是通过operateiondictionary来管理，加在UIView上以便Button和ImageView复用
 typedef NSMutableDictionary<NSString *, id> SDOperationsDictionary;
 
 @implementation UIView (WebCacheOperation)
@@ -40,6 +41,7 @@ typedef NSMutableDictionary<NSString *, id> SDOperationsDictionary;
 
 - (void)sd_cancelImageLoadOperationWithKey:(nullable NSString *)key {
     // Cancel in progress downloader from queue
+    // 取消当前正在进行的所有下载操作
     SDOperationsDictionary *operationDictionary = [self operationDictionary];
     id operations = operationDictionary[key];
     if (operations) {

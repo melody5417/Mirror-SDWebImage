@@ -34,30 +34,47 @@ static char TAG_ACTIVITY_SHOW;
                      setImageBlock:(nullable SDSetImageBlock)setImageBlock
                           progress:(nullable SDWebImageDownloaderProgressBlock)progressBlock
                          completed:(nullable SDExternalCompletionBlock)completedBlock {
+    // 保证当前没有正在进行的异步下载操作， 不会与即将进行的操作发生冲突
     NSString *validOperationKey = operationKey ?: NSStringFromClass([self class]);
     [self sd_cancelImageLoadOperationWithKey:validOperationKey];
+    
     objc_setAssociatedObject(self, &imageURLKey, url, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     
+    // 占位图实现
     if (!(options & SDWebImageDelayPlaceholder)) {
         dispatch_main_async_safe(^{
             [self sd_setImage:placeholder imageData:nil basedOnClassOrViaCustomSetImageBlock:setImageBlock];
         });
     }
     
+    // 获取图片
     if (url) {
+        // 是否显示等待菊花
         // check if activityView is enabled or not
         if ([self sd_showActivityIndicatorView]) {
             [self sd_addActivityIndicator];
         }
         
-        __weak __typeof(self)wself = self;
-        id <SDWebImageOperation> operation = [SDWebImageManager.sharedManager loadImageWithURL:url options:options progress:progressBlock completed:^(UIImage *image, NSData *data, NSError *error, SDImageCacheType cacheType, BOOL finished, NSURL *imageURL) {
+        // 学习这里避免循环引用的方法
+        __weak __typeof(self) wself = self;
+        id <SDWebImageOperation> operation = [SDWebImageManager.sharedManager
+                                              loadImageWithURL:url
+                                              options:options
+                                              progress:progressBlock
+                                              completed:^(UIImage *image, NSData *data, NSError *error, SDImageCacheType cacheType, BOOL finished, NSURL *imageURL) {
+            // 学习这里避免循环引用的方法
+            // 调整源代码顺序 先判断sself 再移除activityIndicator
             __strong __typeof (wself) sself = wself;
-            [sself sd_removeActivityIndicator];
             if (!sself) {
                 return;
             }
+             
+            // 移除等待菊花
+            [sself sd_removeActivityIndicator];
+            
+            // 确保block在主线程执行的宏定义
             dispatch_main_async_safe(^{
+                // 再次检查 确保安全
                 if (!sself) {
                     return;
                 }
@@ -78,6 +95,8 @@ static char TAG_ACTIVITY_SHOW;
                 }
             });
         }];
+        
+        // 向operationDictionary中添加一个键值对，表示下载操作正在进行，也用于后续cancel
         [self sd_setImageLoadOperation:operation forKey:validOperationKey];
     } else {
         dispatch_main_async_safe(^{
