@@ -43,6 +43,9 @@ typedef NS_OPTIONS(NSUInteger, SDWebImageOptions) {
      *
      * Use this flag only if you can't make your URLs static with embedded cache busting parameter.
      */
+    /**
+     *
+     */
     SDWebImageRefreshCached = 1 << 4,
 
     /**

@@ -35,6 +35,7 @@
 /**
  * The maximum size of the cache, in bytes.
  */
+// 默认0 无限制 需要自己设置
 @property (assign, nonatomic) NSUInteger maxCacheSize;
 
 @end
