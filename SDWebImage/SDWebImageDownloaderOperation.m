@@ -172,6 +172,7 @@ typedef NSMutableDictionary<NSString *, id> SDCallbacksDictionary;
             progressBlock(0, NSURLResponseUnknownLength, self.request.URL);
         }
         dispatch_async(dispatch_get_main_queue(), ^{
+            // 发出 SDWebImageDownloadStartNotification 通知
             [[NSNotificationCenter defaultCenter] postNotificationName:SDWebImageDownloadStartNotification object:self];
         });
     } else {
@@ -295,6 +296,7 @@ didReceiveResponse:(NSURLResponse *)response
     }
 }
 
+// 回调 progressBlock 提示下载进度
 - (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveData:(NSData *)data {
     [self.imageData appendData:data];
 
@@ -405,8 +407,10 @@ didReceiveResponse:(NSURLResponse *)response
     @synchronized(self) {
         self.dataTask = nil;
         dispatch_async(dispatch_get_main_queue(), ^{
+            // 停止下载 发通知 SDWebImageDownloadStopNotification
             [[NSNotificationCenter defaultCenter] postNotificationName:SDWebImageDownloadStopNotification object:self];
             if (!error) {
+                // 完成下载 发通知 SDWebImageDownloadFinishNotification
                 [[NSNotificationCenter defaultCenter] postNotificationName:SDWebImageDownloadFinishNotification object:self];
             }
         });

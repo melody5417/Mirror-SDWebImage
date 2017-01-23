@@ -10,6 +10,7 @@
 #import <objc/message.h>
 #import "NSImage+WebCache.h"
 
+// 这个类应该是为了更简洁的 cancel 操作而设计出来的
 @interface SDWebImageCombinedOperation : NSObject <SDWebImageOperation>
 
 @property (assign, nonatomic, getter = isCancelled) BOOL cancelled;
@@ -120,9 +121,12 @@
         url = nil;
     }
 
+    // combinedOperation 这个类的存在实际是为了代码更加简洁，因为调用这个类的cancel方法可以将其持有的两个operation都cancel
     __block SDWebImageCombinedOperation *operation = [SDWebImageCombinedOperation new];
     __weak SDWebImageCombinedOperation *weakOperation = operation;
 
+    // 判断是否为失败url，并 check 是否启用 SDWebImageRetryFailed 策略。
+    // 若 url为空 或者 是失败url且未开启SDWebImageRetryFailed 则直接返回
     BOOL isFailedUrl = NO;
     if (url) {
         @synchronized (self.failedURLs) {
@@ -135,6 +139,7 @@
         return operation;
     }
 
+    // 加入runningOperations字典 通过url获取cacheKey 在缓存中查找是否下载过相同的图片
     @synchronized (self.runningOperations) {
         [self.runningOperations addObject:operation];
     }
@@ -171,6 +176,7 @@
                 downloaderOptions |= SDWebImageDownloaderIgnoreCachedResponse;
             }
             
+            // 开始下载图片
             SDWebImageDownloadToken *subOperationToken = [self.imageDownloader downloadImageWithURL:url options:downloaderOptions progress:progressBlock completed:^(UIImage *downloadedImage, NSData *downloadedData, NSError *error, BOOL finished) {
                 __strong __typeof(weakOperation) strongOperation = weakOperation;
                 if (!strongOperation || strongOperation.isCancelled) {
@@ -193,6 +199,7 @@
                     }
                 }
                 else {
+                    // 若失败后重试策略 移除failedURL
                     if ((options & SDWebImageRetryFailed)) {
                         @synchronized (self.failedURLs) {
                             [self.failedURLs removeObject:url];
@@ -216,17 +223,21 @@
                             [self callCompletionBlockForOperation:strongOperation completion:completedBlock image:transformedImage data:downloadedData error:nil cacheType:SDImageCacheTypeNone finished:finished url:url];
                         });
                     } else {
+                        // 下载图片成功，在全局cache中存储图片的数据
                         if (downloadedImage && finished) {
                             [self.imageCache storeImage:downloadedImage imageData:downloadedData forKey:key toDisk:cacheOnDisk completion:nil];
                         }
+                        // 调用completedBlock， 对UI层操作
                         [self callCompletionBlockForOperation:strongOperation completion:completedBlock image:downloadedImage data:downloadedData error:nil cacheType:SDImageCacheTypeNone finished:finished url:url];
                     }
                 }
 
+                // 从runningOperations中移除
                 if (finished) {
                     [self safelyRemoveOperationFromRunning:strongOperation];
                 }
             }];
+            //将subOperation的cancel操作添加到operation.cancelBlock中，方便之后操作的取消
             operation.cancelBlock = ^{
                 [self.imageDownloader cancel:subOperationToken];
                 __strong __typeof(weakOperation) strongOperation = weakOperation;

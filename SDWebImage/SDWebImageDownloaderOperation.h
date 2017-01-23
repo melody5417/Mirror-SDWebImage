@@ -37,7 +37,7 @@ extern NSString * _Nonnull const SDWebImageDownloadFinishNotification;
 
 @end
 
-
+// 当这个类的实例被加入队列之后，start方法就会被调用，而start方法首先就会产生一个session
 @interface SDWebImageDownloaderOperation : NSOperation <SDWebImageDownloaderOperationInterface, SDWebImageOperation, NSURLSessionTaskDelegate, NSURLSessionDataDelegate>
 
 /**

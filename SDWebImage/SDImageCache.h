@@ -37,6 +37,7 @@ typedef void(^SDWebImageCalculateSizeBlock)(NSUInteger fileCount, NSUInteger tot
  * SDImageCache maintains a memory cache and an optional disk cache. Disk cache write operations are performed
  * asynchronous so it doesn’t add unnecessary latency to the UI.
  */
+// SDImageCache维护了一个内存cache和一个可选的磁盘cache。异步不阻塞UI
 @interface SDImageCache : NSObject
 
 #pragma mark - Properties
@@ -165,6 +166,7 @@ typedef void(^SDWebImageCalculateSizeBlock)(NSUInteger fileCount, NSUInteger tot
  *
  * @return a NSOperation instance containing the cache op
  */
+// 异步查询图片缓存。图片缓存可能有内存缓存和磁盘缓存，该方法在先在内存缓存中查找，然后在磁盘缓存中查找图片。
 - (nullable NSOperation *)queryCacheOperationForKey:(nullable NSString *)key done:(nullable SDCacheQueryCompletedBlock)doneBlock;
 
 /**

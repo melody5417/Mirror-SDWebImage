@@ -156,6 +156,8 @@ SDWebImageManager *manager = [SDWebImageManager sharedManager];
 
  * @endcode
  */
+// SDWebImageManager主要作用就是为 UIImageView+WebCache 和 SDWebImageDownloader SDImageCache
+// 之间构建一个桥梁， 更好的协调 异步下载和图片缓存。
 @interface SDWebImageManager : NSObject
 
 @property (weak, nonatomic, nullable) id <SDWebImageManagerDelegate> delegate;
