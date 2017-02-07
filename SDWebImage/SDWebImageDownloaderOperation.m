@@ -18,11 +18,24 @@ NSString *const SDWebImageDownloadReceiveResponseNotification = @"SDWebImageDown
 NSString *const SDWebImageDownloadStopNotification = @"SDWebImageDownloadStopNotification";
 NSString *const SDWebImageDownloadFinishNotification = @"SDWebImageDownloadFinishNotification";
 
+
+/**
+ * NOTE:
+ * SDCallbacksDictionary存储的key值对应progress 和 completed 
+ * 即下载的进度和完成的block都是根据这个key-value形式存储的 最终存储在callbackBlocks数组中。
+ */
 static NSString *const kProgressCallbackKey = @"progress";
 static NSString *const kCompletedCallbackKey = @"completed";
 
 typedef NSMutableDictionary<NSString *, id> SDCallbacksDictionary;
 
+/**
+ * 下载一张图片的核心逻辑
+ * 1. 初始化一个task
+ * 2. 添加响应者
+ * 3. 开启下载任务
+ * 4. 处理下载过程和结束后的事情
+ */
 @interface SDWebImageDownloaderOperation ()
 
 @property (strong, nonatomic, nonnull) NSMutableArray<SDCallbacksDictionary *> *callbackBlocks;

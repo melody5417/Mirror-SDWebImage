@@ -10,6 +10,9 @@
 #import "SDWebImageDownloader.h"
 #import "SDWebImageOperation.h"
 
+/**
+ * 任务执行的四个关键时间节点
+ */
 extern NSString * _Nonnull const SDWebImageDownloadStartNotification;
 extern NSString * _Nonnull const SDWebImageDownloadReceiveResponseNotification;
 extern NSString * _Nonnull const SDWebImageDownloadStopNotification;
