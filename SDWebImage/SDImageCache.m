@@ -15,6 +15,10 @@
 #import "NSImage+WebCache.h"
 #import "SDImageCacheConfig.h"
 
+/**
+ * NSCache在收到内存警告的时候会释放自身的一部分资源，设计AutoPurgeCache的目的是
+ * 在收到警告时，释放缓存的所有资源。
+ **/
 // See https://github.com/rs/SDWebImage/pull/1141 for discussion
 @interface AutoPurgeCache : NSCache
 @end
@@ -40,6 +44,7 @@
 @end
 
 
+// 图片在缓存中的大小 in pixel
 FOUNDATION_STATIC_INLINE NSUInteger SDCacheCostForImage(UIImage *image) {
 #if SD_MAC
     return image.size.height * image.size.width;
@@ -47,13 +52,18 @@ FOUNDATION_STATIC_INLINE NSUInteger SDCacheCostForImage(UIImage *image) {
     return image.size.height * image.size.width * image.scale * image.scale;
 #endif
 }
+/**
+ * 注意：FOUNDATION_STATIC_INLINE表示该函数是一个具有文件内部访问权限的内联函数，所谓的内联函数就是建议编译器在调用时将函数展开。建议的意思就是说编译器不一定会按照你的建议做。因此内联函数尽量不要写的太复杂。
+ **/
 
 @interface SDImageCache ()
 
 #pragma mark - Properties
 @property (strong, nonatomic, nonnull) NSCache *memCache;
 @property (strong, nonatomic, nonnull) NSString *diskCachePath;
+// 数据源路径 可以通过addReadOnlyCachePath:方法添加
 @property (strong, nonatomic, nullable) NSMutableArray<NSString *> *customPaths;
+// 称作输入输出队列，队列往往可以当做一种“锁”来使用，我们把某些任务按照顺序一步一步的进行，必须考虑线程是否安全
 @property (SDDispatchQueueSetterSementics, nonatomic, nullable) dispatch_queue_t ioQueue;
 
 @end
@@ -86,6 +96,7 @@ FOUNDATION_STATIC_INLINE NSUInteger SDCacheCostForImage(UIImage *image) {
 - (nonnull instancetype)initWithNamespace:(nonnull NSString *)ns
                        diskCacheDirectory:(nonnull NSString *)directory {
     if ((self = [super init])) {
+        // 1. 初始化
         NSString *fullNamespace = [@"com.hackemist.SDWebImageCache." stringByAppendingString:ns];
         
         // Create IO serial queue
@@ -109,6 +120,7 @@ FOUNDATION_STATIC_INLINE NSUInteger SDCacheCostForImage(UIImage *image) {
             _fileManager = [NSFileManager new];
         });
 
+        // 2. 添加通知监听
 #if SD_UIKIT
         // Subscribe to app events
         [[NSNotificationCenter defaultCenter] addObserver:self
@@ -165,6 +177,7 @@ FOUNDATION_STATIC_INLINE NSUInteger SDCacheCostForImage(UIImage *image) {
     return [self cachePathForKey:key inPath:self.diskCachePath];
 }
 
+// MD5
 - (nullable NSString *)cachedFileNameForKey:(nullable NSString *)key {
     const char *str = key.UTF8String;
     if (str == NULL) {
@@ -217,6 +230,7 @@ FOUNDATION_STATIC_INLINE NSUInteger SDCacheCostForImage(UIImage *image) {
     }
     
     if (toDisk) {
+        // NOTE: 数据保存这一过程必须是异步的，在完成之后，在主线程回调
         dispatch_async(self.ioQueue, ^{
             NSData *data = imageData;
             
@@ -225,8 +239,10 @@ FOUNDATION_STATIC_INLINE NSUInteger SDCacheCostForImage(UIImage *image) {
                 data = [image sd_imageDataAsFormat:imageFormatFromData];
             }
             
+            // NOTE: 保存到disk 是 NSData， 内存直接保存 UIImage
             [self storeImageDataToDisk:data forKey:key];
             if (completionBlock) {
+                // NOTE: 数据保存这一过程必须是异步的，在完成之后，在主线程回调
                 dispatch_async(dispatch_get_main_queue(), ^{
                     completionBlock();
                 });
@@ -289,6 +305,8 @@ FOUNDATION_STATIC_INLINE NSUInteger SDCacheCostForImage(UIImage *image) {
 
 - (nullable UIImage *)imageFromDiskCacheForKey:(nullable NSString *)key {
     UIImage *diskImage = [self diskImageForKey:key];
+    
+    // 同时缓存到内存
     if (diskImage && self.config.shouldCacheImagesInMemory) {
         NSUInteger cost = SDCacheCostForImage(diskImage);
         [self.memCache setObject:diskImage forKey:key cost:cost];
@@ -484,6 +502,11 @@ FOUNDATION_STATIC_INLINE NSUInteger SDCacheCostForImage(UIImage *image) {
     [self deleteOldFilesWithCompletionBlock:nil];
 }
 
+/**
+ * 对于清空旧数据而言，我们需要考虑两个方面：
+ * 首先要清空掉所有的过期的数据
+ * 过期的数据清空后，缓存的数据比我们设置的最大缓存量还大，我们要继续清空数据，直到满足我们的需求为止
+ **/
 - (void)deleteOldFilesWithCompletionBlock:(nullable SDWebImageNoParamsBlock)completionBlock {
     dispatch_async(self.ioQueue, ^{
         NSURL *diskCacheURL = [NSURL fileURLWithPath:self.diskCachePath isDirectory:YES];
@@ -537,6 +560,7 @@ FOUNDATION_STATIC_INLINE NSUInteger SDCacheCostForImage(UIImage *image) {
             const NSUInteger desiredCacheSize = self.config.maxCacheSize / 2;
 
             // Sort the remaining cache files by their last modification time (oldest first).
+            // 这个会返回排好序的字典的所有的key。NSSortConcurrent是并发排序，效率高，但可能不稳定，NSSortStable 稳定，但可能效率不如NSSortConcurrent高。排序的规则通过Block指定。
             NSArray<NSURL *> *sortedFiles = [cacheFiles keysSortedByValueWithOptions:NSSortConcurrent
                                                                      usingComparator:^NSComparisonResult(id obj1, id obj2) {
                                                                          return [obj1[NSURLContentModificationDateKey] compare:obj2[NSURLContentModificationDateKey]];

@@ -79,10 +79,18 @@ typedef void(^SDWebImageCalculateSizeBlock)(NSUInteger fileCount, NSUInteger tot
  * @param ns        The namespace to use for this cache store
  * @param directory Directory to cache disk images in
  */
+// NOTE: 如果想设置某个方法为指定的初始化方法，可以通过NS_DESIGNATED_INITIALIZER来实现。
 - (nonnull instancetype)initWithNamespace:(nonnull NSString *)ns
                        diskCacheDirectory:(nonnull NSString *)directory NS_DESIGNATED_INITIALIZER;
 
 #pragma mark - Cache paths
+
+/**
+ * 方法makeDiskCachePath:设置并获取缓存路径
+ * 方法addReadOnlyCachePath:增加索引的路径 这个方法提供了一个思路
+ * 问题： 之前把图片缓存到路径1， 重构代码后需要更新缓存地址为路径2， 为了建立两个路径的联系，
+ * addReadOnlyCachePath: 将路径1添加到管理类的路径集合中即可，目的是增加搜索的范围，重构后可使用新的路径。
+ **/
 
 - (nullable NSString *)makeDiskCachePath:(nonnull NSString*)fullNamespace;
 
@@ -166,7 +174,7 @@ typedef void(^SDWebImageCalculateSizeBlock)(NSUInteger fileCount, NSUInteger tot
  *
  * @return a NSOperation instance containing the cache op
  */
-// 异步查询图片缓存。图片缓存可能有内存缓存和磁盘缓存，该方法在先在内存缓存中查找，然后在磁盘缓存中查找图片。
+// 异步查询图片缓存。图片缓存可能有内存缓存和磁盘缓存，该方法在先在内存缓存中查找，然后在磁盘缓存中查找图片。 这里返回一个NSOperation是因为在内存中获取耗时短，但是在disk中时间较长。 NSOperation可以进行取消操作。
 - (nullable NSOperation *)queryCacheOperationForKey:(nullable NSString *)key done:(nullable SDCacheQueryCompletedBlock)doneBlock;
 
 /**
